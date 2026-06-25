@@ -234,7 +234,7 @@ select option{background:var(--surface2);}
     <button class="tab" onclick="showTab('dosis',this)">Dosis</button>
     <button class="tab" onclick="showTab('escalada',this)">Escalada</button>
     <button class="tab" onclick="showTab('protocolo',this)">Protocolo</button>
-    <button class="tab" onclick="showTab('calendario',this)">Calendario</button>
+    <button class="tab" onclick="showTab('calendario',this);loadInjectionCache(calViewDate.getFullYear(),calViewDate.getMonth()).then(()=>renderCalendar())">Calendario</button>
     <button class="tab" onclick="showTab('pepcalc',this)">PepCalc</button>
     <button class="tab" onclick="showTab('progreso',this)">Progreso</button>
   </div>
@@ -1028,23 +1028,39 @@ async function deleteManualInjection(id){
 }
 
 function renderInjectionLog(){
-  const container=document.getElementById('inj-log-list');
+  var container=document.getElementById('inj-log-list');
   if(!container||!calSelectedDate)return;
-  const injections=injectionsByDate[calSelectedDate]||[];
-  const PEP_COLOR_MAP={'retatrutide':'#7c6aff','ghk-cu':'#4fffb0','ghkcu':'#4fffb0','melanotan 2':'#ff9f43','mt2':'#ff9f43','custom':'#ff6b9d'};
+  var injections=injectionsByDate[calSelectedDate]||[];
+  var PEP_COLOR_MAP={'retatrutide':'#7c6aff','ghk-cu':'#4fffb0','ghkcu':'#4fffb0','melanotan 2':'#ff9f43','mt2':'#ff9f43','custom':'#ff6b9d'};
+  container.innerHTML='';
   if(!injections.length){
-    container.innerHTML='<div style="color:var(--muted);font-size:0.75rem;padding:4px 0">Sin entradas &mdash; usa el formulario de abajo para registrar</div>';
+    container.innerHTML='<div style="color:var(--muted);font-size:0.75rem;padding:4px 0">Sin entradas &mdash; añade una abajo</div>';
     return;
   }
-  container.innerHTML=injections.map(inj=>{
-    const col=PEP_COLOR_MAP[inj.peptide_name.toLowerCase()]||'var(--accent)';
-    return '<div class="inj-log-item">'
-      +'<span class="chip" style="background:'+col+'"></span>'
-      +'<span style="font-weight:600">'+inj.peptide_name+'</span>'
-      +'<span style="font-family:'Space Mono',monospace;color:var(--accent2);margin-left:auto">'+inj.dose_mcg+' mcg</span>'
-      +'<button class="proto-delete" onclick="deleteManualInjection(''+inj.id+'')" title="Borrar">&times;</button>'
-      +'</div>';
-  }).join('');
+  injections.forEach(function(inj){
+    var col=PEP_COLOR_MAP[inj.peptide_name.toLowerCase()]||'var(--accent)';
+    var row=document.createElement('div');
+    row.className='inj-log-item';
+    var chip=document.createElement('span');
+    chip.className='chip';
+    chip.style.background=col;
+    var nameSpan=document.createElement('span');
+    nameSpan.style.fontWeight='600';
+    nameSpan.textContent=inj.peptide_name;
+    var doseSpan=document.createElement('span');
+    doseSpan.style.cssText='font-family:monospace;color:var(--accent2);margin-left:auto';
+    doseSpan.textContent=inj.dose_mcg+' mcg';
+    var delBtn=document.createElement('button');
+    delBtn.className='proto-delete';
+    delBtn.title='Borrar';
+    delBtn.innerHTML='&times;';
+    delBtn.onclick=(function(id){return function(){deleteManualInjection(id);};})(inj.id);
+    row.appendChild(chip);
+    row.appendChild(nameSpan);
+    row.appendChild(doseSpan);
+    row.appendChild(delBtn);
+    container.appendChild(row);
+  });
 }
 
 // ── INIT ──────────────────────────────────────────
